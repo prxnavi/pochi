@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --color-cream: #faf6f0;
+  --color-box-pink: #f4a9c0;
+  --color-box-pink-deep: #e8829f;
+  --color-lavender: #c9bfe8;
+  --color-mint: #b8e0d2;
+  --color-ink: #2b2621;
+  --color-ink-soft: #6b6259;
+}
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-box-pink: var(--color-box-pink);
+  --color-box-pink-deep: var(--color-box-pink-deep);
+  --color-lavender: var(--color-lavender);
+  --color-mint: var(--color-mint);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --font-display: var(--font-baloo);
+  --font-body: var(--font-nunito);
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body), sans-serif;
+}
+
+/* Signature element: the "torn box corner" reveal on listing cards */
+.box-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.box-card::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 34px;
+  height: 34px;
+  background: var(--color-cream);
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+  transition: width 0.2s ease, height 0.2s ease;
+  border-left: 2px dashed var(--color-ink-soft);
+  border-bottom: 2px dashed var(--color-ink-soft);
+}
+
+.box-card:hover::after {
+  width: 46px;
+  height: 46px;
+}
