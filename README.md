@@ -4,7 +4,7 @@ Peer-to-peer trading for blind box collectibles. MVP scope: Sonny Angels only, n
 
 ## What's in v1
 
-- Email magic-link auth
+- Google sign-in
 - List a figure (photo, name, series, condition)
 - Browse available figures
 - Propose a 1-for-1 trade
@@ -23,13 +23,16 @@ Go to supabase.com, create a new project, and grab your project URL and anon key
 
 Open the SQL editor in your Supabase dashboard and run the contents of `supabase/schema.sql`. This creates the 4 tables (`users`, `listings`, `trades`, `trade_items`), row-level security policies, and a public storage bucket for listing photos.
 
-### 3. Configure email auth
+### 3. Configure Google sign-in
 
-In Supabase, go to Authentication → Providers and make sure Email is enabled. For local testing you can leave "Confirm email" settings as default — magic links work out of the box.
+**In Google Cloud Console** (console.cloud.google.com):
+- Create a project (or use an existing one) → APIs & Services → Credentials → Create Credentials → OAuth client ID → Application type: **Web application**.
+- Under Authorized redirect URIs, add `https://<your-project-ref>.supabase.co/auth/v1/callback` (find your project ref in the Supabase dashboard URL, or under Settings → API). This is Supabase's own callback, not your app's.
+- Copy the generated **Client ID** and **Client Secret**.
 
-Under Authentication → URL Configuration, add `http://localhost:3000/auth/callback` (and later your production URL) to the redirect allow list.
+**In Supabase**: Authentication → Providers → Google → enable it, paste the Client ID and Client Secret, save.
 
-Note: magic links only work when opened on the same device/browser that requested them (Supabase's PKCE flow ties the sign-in to that browser's session) — if that becomes a problem, switching to a typed sign-in code instead is the fix; ask if you want to revisit that.
+**Also in Supabase**: Authentication → URL Configuration → add `http://localhost:3000/auth/callback` (and later your production URL) to the redirect allow list — this is your app's callback that finishes the sign-in after Google redirects back through Supabase.
 
 ### 4. Environment variables
 
@@ -54,7 +57,7 @@ Push to GitHub and import into Vercel. Add the same two env vars in the Vercel p
 
 ## Testing the loop
 
-1. Sign in with two different emails (two browser profiles or incognito windows work)
+1. Sign in with two different Google accounts (two browser profiles or incognito windows work)
 2. Both list a figure
 3. From account A, open account B's listing and propose a trade
 4. From account B, go to "my trades" and accept
