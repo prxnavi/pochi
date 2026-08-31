@@ -51,10 +51,17 @@ alter table public.listings enable row level security;
 alter table public.trades enable row level security;
 alter table public.trade_items enable row level security;
 
--- users: anyone signed in can read profiles (needed to show usernames), only self can update
-create policy "users are readable by anyone signed in"
+-- users: publicly readable (needed to show usernames on public listings),
+-- only self can update. Row-level security alone would open every column —
+-- including email — to anyone, so the anon role's column grants are
+-- narrowed below to just what browsing needs. Authenticated requests keep
+-- their existing (broader, table-level) column access unchanged.
+create policy "usernames are publicly readable"
   on public.users for select
-  using (auth.role() = 'authenticated');
+  using (true);
+
+revoke select on public.users from anon;
+grant select (id, username, created_at) on public.users to anon;
 
 create policy "users can update own profile"
   on public.users for update
@@ -64,10 +71,11 @@ create policy "users can insert own profile"
   on public.users for insert
   with check (auth.uid() = id);
 
--- listings: readable by anyone signed in, writable only by owner
-create policy "listings are readable by anyone signed in"
+-- listings: publicly readable so the shelf works without signing in,
+-- writable only by owner
+create policy "listings are publicly readable"
   on public.listings for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "users can insert own listings"
   on public.listings for insert
