@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ProposeTradeForm from "@/components/ProposeTradeForm";
+import DeleteListingButton from "@/components/DeleteListingButton";
 import type { Condition, Listing } from "@/types/database";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -88,7 +89,10 @@ export default async function ListingDetailPage({
       )}
 
       {isOwner && (
-        <p className="mt-8 text-sm font-semibold text-ink-soft">this is your listing.</p>
+        <>
+          <p className="mt-8 text-sm font-semibold text-ink-soft">this is your listing.</p>
+          {listing.status === "available" && <DeleteListingButton listingId={listing.id} />}
+        </>
       )}
     </div>
   );
