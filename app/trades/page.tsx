@@ -29,8 +29,12 @@ export default async function TradesPage() {
     const partnerIds = acceptedTrades.map((t) =>
       t.proposer_id === user.id ? t.receiver_id : t.proposer_id
     );
+    // trade_partner_emails only returns a row when the caller actually
+    // shares an accepted trade with that user (see supabase/schema.sql) —
+    // it's the sole remaining way to read someone else's email, since
+    // public.users itself no longer grants that column to other users.
     const { data: emails } = await supabase
-      .from("users")
+      .from("trade_partner_emails")
       .select("id, email")
       .in("id", partnerIds);
     const emailById = new Map((emails ?? []).map((u) => [u.id, u.email]));

@@ -127,6 +127,30 @@ create policy "trade participants can insert trade items"
     )
   );
 
+-- Any authenticated request can otherwise read any row of public.users
+-- (RLS is row-level, not column-level, so the "usernames are publicly
+-- readable" policy above would expose email too). Narrow authenticated's
+-- column access the same way anon's was narrowed, and route the one place
+-- the app actually needs someone else's email — the accepted-trade reveal
+-- in app/trades/page.tsx — through this view instead, which only returns a
+-- row for users who share an accepted trade with the caller.
+revoke select on public.users from authenticated;
+grant select (id, username, created_at) on public.users to authenticated;
+
+create view public.trade_partner_emails as
+select u.id, u.email
+from public.users u
+where exists (
+  select 1 from public.trades t
+  where t.status = 'accepted'
+    and (
+      (t.proposer_id = auth.uid() and t.receiver_id = u.id)
+      or (t.receiver_id = auth.uid() and t.proposer_id = u.id)
+    )
+);
+
+grant select on public.trade_partner_emails to authenticated;
+
 -- Storage bucket for listing photos (run once)
 insert into storage.buckets (id, name, public) values ('listing-photos', 'listing-photos', true)
 on conflict (id) do nothing;
