@@ -41,6 +41,9 @@ export default function Nav() {
               <Link href="/trades" className="hover:text-box-pink-deep transition-colors">
                 my trades
               </Link>
+              <Link href="/account" className="hover:text-box-pink-deep transition-colors">
+                profile
+              </Link>
               <button
                 onClick={signOut}
                 className="text-ink-soft hover:text-ink transition-colors"
