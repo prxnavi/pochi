@@ -39,8 +39,8 @@ body {
   position: absolute;
   top: -1px;
   right: -1px;
-  width: 34px;
-  height: 34px;
+  width: 0;
+  height: 0;
   background: var(--color-cream);
   clip-path: polygon(100% 0, 0 0, 100% 100%);
   transition: width 0.2s ease, height 0.2s ease;
@@ -49,6 +49,6 @@ body {
 }
 
 .box-card:hover::after {
-  width: 46px;
-  height: 46px;
+  width: 34px;
+  height: 34px;
 }
