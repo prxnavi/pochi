@@ -3,6 +3,32 @@ import ListingCard from "@/components/ListingCard";
 import Link from "next/link";
 import type { Listing } from "@/types/database";
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// Brand names collectors search under interchangeably — same toy line,
+// different regional name (Sylvanian Families outside the US, Calico
+// Critters in the US). Add more pairs here as other aliases come up.
+const SYNONYM_PAIRS: [string, string][] = [["sylvanian", "calico"]];
+
+function synonymFor(term: string): string | null {
+  const lower = term.toLowerCase();
+  for (const [a, b] of SYNONYM_PAIRS) {
+    if (lower.includes(a)) return b;
+    if (lower.includes(b)) return a;
+  }
+  return null;
+}
+
+async function searchListings(supabase: SupabaseServerClient, term: string) {
+  const { data } = await supabase
+    .from("listings")
+    .select("*, users(username)")
+    .eq("status", "available")
+    .ilike("figure_name", `%${term}%`)
+    .order("created_at", { ascending: false });
+  return (data ?? []) as Listing[];
+}
+
 export default async function BrowsePage({
   searchParams,
 }: {
@@ -14,17 +40,22 @@ export default async function BrowsePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let query = supabase
-    .from("listings")
-    .select("*, users(username)")
-    .eq("status", "available")
-    .order("created_at", { ascending: false });
+  // an empty term's "%%" ilike matches every row, so this doubles as the
+  // no-search-query case too
+  let listings = await searchListings(supabase, q ?? "");
 
+  // searching one brand name also pulls in listings under its alias, so
+  // "sylvanian" surfaces "Calico Critters ..." figures and vice versa
   if (q) {
-    query = query.ilike("figure_name", `%${q}%`);
+    const synonym = synonymFor(q);
+    if (synonym) {
+      const extra = await searchListings(supabase, synonym);
+      const seen = new Set(listings.map((l) => l.id));
+      listings = [...listings, ...extra.filter((l) => !seen.has(l.id))].sort((a, b) =>
+        a.created_at < b.created_at ? 1 : -1
+      );
+    }
   }
-
-  const { data: listings } = await query;
 
   return (
     <div className="max-w-5xl mx-auto px-5 py-10">
@@ -43,7 +74,7 @@ export default async function BrowsePage({
           name="q"
           defaultValue={q ?? ""}
           placeholder="search by figure name..."
-          className="w-full rounded-xl border-2 border-ink/15 px-4 py-2.5 font-semibold focus:outline-none focus:border-box-pink-deep"
+          className="w-full min-w-0 rounded-xl border-2 border-ink/15 px-4 py-2.5 font-semibold focus:outline-none focus:border-box-pink-deep"
         />
         {q && (
           <Link
@@ -61,9 +92,9 @@ export default async function BrowsePage({
         </div>
       )}
 
-      {listings && listings.length > 0 ? (
+      {listings.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {(listings as Listing[]).map((listing) => (
+          {listings.map((listing) => (
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
