@@ -33,7 +33,7 @@ export default function TradeCard({ trade, myId }: { trade: Trade; myId: string 
     // respond_to_trade in supabase/schema.sql) so a partial failure can't
     // leave the trade accepted with listings still marked available.
     const { error: rpcError } = await supabase.rpc("respond_to_trade", {
-      trade_id: trade.id,
+      p_trade_id: trade.id,
       new_status: status,
     });
 

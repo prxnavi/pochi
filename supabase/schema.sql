@@ -260,7 +260,7 @@ grant execute on function public.propose_trade(uuid, uuid) to authenticated;
 -- 'traded' in the same transaction — so a failure partway through can't
 -- leave the trade accepted with listings still marked available. Only the
 -- receiver may call this, and only while the trade is still 'proposed'.
-create or replace function public.respond_to_trade(trade_id uuid, new_status text)
+create or replace function public.respond_to_trade(p_trade_id uuid, new_status text)
 returns void
 language plpgsql
 security definer
@@ -273,7 +273,7 @@ begin
     raise exception 'invalid status';
   end if;
 
-  select * into t from public.trades where id = trade_id for update;
+  select * into t from public.trades where id = p_trade_id for update;
   if not found then
     raise exception 'trade not found';
   end if;
