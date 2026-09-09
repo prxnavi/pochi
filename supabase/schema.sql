@@ -38,18 +38,29 @@ create table public.trade_items (
   offered_by uuid not null references public.users(id) on delete cascade
 );
 
+-- 5. messages (per-trade chat, unlocked once a trade is accepted)
+create table public.messages (
+  id uuid primary key default gen_random_uuid(),
+  trade_id uuid not null references public.trades(id) on delete cascade,
+  sender_id uuid not null references public.users(id) on delete cascade,
+  body text not null check (char_length(body) > 0 and char_length(body) <= 2000),
+  created_at timestamptz not null default now()
+);
+
 -- Indexes
 create index listings_status_idx on public.listings(status);
 create index listings_user_idx on public.listings(user_id);
 create index trades_proposer_idx on public.trades(proposer_id);
 create index trades_receiver_idx on public.trades(receiver_id);
 create index trade_items_trade_idx on public.trade_items(trade_id);
+create index messages_trade_idx on public.messages(trade_id, created_at);
 
 -- Row Level Security
 alter table public.users enable row level security;
 alter table public.listings enable row level security;
 alter table public.trades enable row level security;
 alter table public.trade_items enable row level security;
+alter table public.messages enable row level security;
 
 -- users: publicly readable (needed to show usernames on public listings),
 -- only self can update. Row-level security alone would open every column —
@@ -126,6 +137,34 @@ create policy "trade participants can insert trade items"
       and (t.proposer_id = auth.uid() or t.receiver_id = auth.uid())
     )
   );
+
+-- messages: participants can always read the thread (so history survives
+-- any future status change), but can only send once the trade is actually
+-- accepted — that's what "unlocks" chat.
+create policy "trade participants can read messages"
+  on public.messages for select
+  using (
+    exists (
+      select 1 from public.trades t
+      where t.id = trade_id
+      and (t.proposer_id = auth.uid() or t.receiver_id = auth.uid())
+    )
+  );
+
+create policy "trade participants can send messages once accepted"
+  on public.messages for insert
+  with check (
+    sender_id = auth.uid()
+    and exists (
+      select 1 from public.trades t
+      where t.id = trade_id
+      and t.status = 'accepted'
+      and (t.proposer_id = auth.uid() or t.receiver_id = auth.uid())
+    )
+  );
+
+-- Realtime delivery for live chat updates
+alter publication supabase_realtime add table public.messages;
 
 -- Any authenticated request can otherwise read any row of public.users
 -- (RLS is row-level, not column-level, so the "usernames are publicly

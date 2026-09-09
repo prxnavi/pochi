@@ -39,3 +39,11 @@ export interface TradeItem {
   offered_by: string;
   listings?: Listing;
 }
+
+export interface Message {
+  id: string;
+  trade_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+}

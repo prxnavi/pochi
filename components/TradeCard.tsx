@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import TradeChat from "@/components/TradeChat";
 import type { Trade } from "@/types/database";
 
 const statusStyle: Record<string, string> = {
@@ -14,6 +15,7 @@ const statusStyle: Record<string, string> = {
 export default function TradeCard({ trade, myId }: { trade: Trade; myId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
   const [supabase] = useState(() => createClient());
   const router = useRouter();
 
@@ -92,13 +94,23 @@ export default function TradeCard({ trade, myId }: { trade: Trade; myId: string 
       </div>
 
       {trade.status === "accepted" && (
-        <p className="mt-3 text-xs font-bold text-ink-soft">
-          reach out to {otherUser?.username} at{" "}
-          <a href={`mailto:${otherUser?.email}`} className="underline text-ink">
-            {otherUser?.email}
-          </a>{" "}
-          to sort out shipping.
-        </p>
+        <>
+          <p className="mt-3 text-xs font-bold text-ink-soft">
+            reach out to {otherUser?.username} at{" "}
+            <a href={`mailto:${otherUser?.email}`} className="underline text-ink">
+              {otherUser?.email}
+            </a>{" "}
+            to sort out shipping, or message them here.
+          </p>
+          <button
+            type="button"
+            onClick={() => setChatOpen((v) => !v)}
+            className="mt-2 text-xs font-bold text-ink underline hover:text-box-pink-deep transition-colors"
+          >
+            {chatOpen ? "hide messages" : "message " + (otherUser?.username ?? "them")}
+          </button>
+          {chatOpen && <TradeChat tradeId={trade.id} myId={myId} />}
+        </>
       )}
 
       {isReceiver && trade.status === "proposed" && (
